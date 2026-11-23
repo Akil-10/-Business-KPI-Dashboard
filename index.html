@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Customer Churn KPI Dashboard</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#f6f7f9;--card:#fff;--text:#1a1d21;--muted:#5b6370;--line:#dde1e7;--churn:#D55E00;--keep:#0072B2;--track:#e8ebf0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171b;--card:#1d2127;--text:#eceff3;--muted:#a3acb9;--line:#323943;--churn:#E8873A;--keep:#56B4E9;--track:#2b3139}}
+:root[data-theme="dark"]{--bg:#14171b;--card:#1d2127;--text:#eceff3;--muted:#a3acb9;--line:#323943;--churn:#E8873A;--keep:#56B4E9;--track:#2b3139}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.5rem;margin:0 0 4px}h2{font-size:1rem;margin:0 0 2px}.sub{color:var(--muted);margin:0 0 16px}
+.filters{display:flex;flex-wrap:wrap;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:16px;align-items:flex-end}
+label{display:flex;flex-direction:column;font-size:.8rem;color:var(--muted);gap:4px}
+select,button{font:inherit;padding:6px 8px;border-radius:6px;border:1px solid var(--line);background:var(--card);color:var(--text)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px}
+.kpi,.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi b{display:block;font-size:1.6rem}.kpi span{font-size:.8rem;color:var(--muted)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px}
+.row{display:grid;grid-template-columns:110px 1fr 70px;gap:8px;align-items:center;margin:6px 0;font-size:.85rem}
+.track{height:16px;background:var(--track);border-radius:4px;overflow:hidden}.fill{height:100%;background:var(--churn)}
+.fill.k{background:var(--keep)}.val{text-align:right;font-variant-numeric:tabular-nums}
+.insight{margin:10px 0 0;padding-top:8px;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted)}
+.def{font-size:.8rem;color:var(--muted)}.def li{margin:3px 0}.empty{padding:20px;color:var(--muted)}
+</style></head><body><main>
+<h1>Customer Churn KPI Dashboard</h1>
+<p class="sub">15 synthetic customers. Use the filters to slice every KPI and chart. Orange = churned or at risk, blue = retained.</p>
+<div class="filters" role="group" aria-label="Filters">
+<label>Contract<select id="fc"></select></label>
+<label>Tenure<select id="ft"></select></label>
+<label>Payment method<select id="fp"></select></label>
+<button id="reset">Reset filters</button></div>
+<div class="kpis" id="kpis" aria-live="polite"></div>
+<div class="grid" id="charts"></div>
+<div class="card" style="margin-top:12px"><h2>KPI definitions</h2><ul class="def">
+<li><b>Churn rate</b> = churned customers ÷ customers in the selection.</li>
+<li><b>Retention rate</b> = 1 − churn rate.</li>
+<li><b>Revenue at risk</b> = monthly charges of churned customers (lost monthly recurring revenue), shown as a share of the selection’s total monthly revenue. The dataset has no “active” status, so this is revenue already lost, and annualised ×12 for scale.</li>
+<li><b>Tenure KPIs</b> = average tenure in months, overall and split by churned vs retained.</li>
+<li>Tenure bands: 0–6, 7–12, 13–24, 25+ months. With n=15, treat every figure as indicative.</li></ul></div>
+</main>
+<script>
+const D=[{"id": "CUST-1001", "contract": "Month-to-Month", "tenure": 12, "pay": "Credit Card", "sub": "Basic", "mrr": 49.99, "churn": true}, {"id": "CUST-1002", "contract": "One Year", "tenure": 24, "pay": "Bank Transfer", "sub": "Pro", "mrr": 79.99, "churn": false}, {"id": "CUST-1003", "contract": "Month-to-Month", "tenure": 6, "pay": "UPI", "sub": "Basic", "mrr": 49.99, "churn": true}, {"id": "CUST-1004", "contract": "Two Year", "tenure": 36, "pay": "Credit Card", "sub": "Enterprise", "mrr": 149.99, "churn": false}, {"id": "CUST-1005", "contract": "Month-to-Month", "tenure": 8, "pay": "Debit Card", "sub": "Pro", "mrr": 79.99, "churn": true}, {"id": "CUST-1006", "contract": "One Year", "tenure": 18, "pay": "UPI", "sub": "Basic", "mrr": 49.99, "churn": false}, {"id": "CUST-1007", "contract": "Month-to-Month", "tenure": 3, "pay": "Credit Card", "sub": "Basic", "mrr": 49.99, "churn": true}, {"id": "CUST-1008", "contract": "Two Year", "tenure": 48, "pay": "Bank Transfer", "sub": "Enterprise", "mrr": 149.99, "churn": false}, {"id": "CUST-1009", "contract": "One Year", "tenure": 15, "pay": "Credit Card", "sub": "Pro", "mrr": 79.99, "churn": false}, {"id": "CUST-1010", "contract": "Month-to-Month", "tenure": 4, "pay": "UPI", "sub": "Basic", "mrr": 49.99, "churn": true}, {"id": "CUST-1011", "contract": "Two Year", "tenure": 30, "pay": "Credit Card", "sub": "Enterprise", "mrr": 149.99, "churn": false}, {"id": "CUST-1012", "contract": "Month-to-Month", "tenure": 14, "pay": "Debit Card", "sub": "Pro", "mrr": 79.99, "churn": true}, {"id": "CUST-1013", "contract": "One Year", "tenure": 22, "pay": "Bank Transfer", "sub": "Basic", "mrr": 49.99, "churn": false}, {"id": "CUST-1014", "contract": "Month-to-Month", "tenure": 2, "pay": "UPI", "sub": "Basic", "mrr": 49.99, "churn": true}, {"id": "CUST-1015", "contract": "Two Year", "tenure": 40, "pay": "Credit Card", "sub": "Enterprise", "mrr": 149.99, "churn": false}];
+const bands=[["0–6 months",0,6],["7–12 months",7,12],["13–24 months",13,24],["25+ months",25,999]];
+const band=t=>bands.find(b=>t>=b[1]&&t<=b[2])[0];
+D.forEach(d=>d.band=band(d.tenure));
+const uniq=k=>[...new Set(D.map(d=>d[k]))].sort();
+function fill(id,vals){const s=document.getElementById(id);s.innerHTML='<option value="">All</option>'+vals.map(v=>`<option>${v}</option>`).join('')}
+fill('fc',uniq('contract'));fill('fp',uniq('pay'));fill('ft',bands.map(b=>b[0]));
+const $=id=>document.getElementById(id);
+const pct=x=>(x*100).toFixed(0)+'%',usd=x=>'$'+x.toLocaleString('en-US',{maximumFractionDigits:0});
+const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
+function bars(rows){return rows.map(r=>`<div class="row"><span>${r.l}</span><div class="track" role="img" aria-label="${r.l}: ${r.t}"><div class="fill ${r.k?'k':''}" style="width:${Math.min(100,r.w)}%"></div></div><span class="val">${r.t}</span></div>`).join('')}
+function group(S,key,order){const keys=order||[...new Set(S.map(d=>d[key]))].sort();
+return keys.map(k=>{const g=S.filter(d=>d[key]===k);return{k,n:g.length,c:g.filter(d=>d.churn).length,mrr:g.filter(d=>d.churn).reduce((s,d)=>s+d.mrr,0)}}).filter(g=>g.n)}
+function rateCard(title,G,note){if(!G.length)return'';const top=[...G].sort((a,b)=>b.c/b.n-a.c/a.n)[0];
+return `<div class="card"><h2>${title}</h2>${bars(G.map(g=>({l:g.k,w:g.c/g.n*100,t:`${pct(g.c/g.n)} (${g.c}/${g.n})`})))}<p class="insight">${top.c? `Highest churn: <b>${top.k}</b> at ${pct(top.c/top.n)} (${top.c} of ${top.n}). `:'No churn in any group here. '}${note}</p></div>`}
+function render(){
+const S=D.filter(d=>(!$('fc').value||d.contract===$('fc').value)&&(!$('fp').value||d.pay===$('fp').value)&&(!$('ft').value||d.band===$('ft').value));
+if(!S.length){$('kpis').innerHTML='<div class="empty">No customers match these filters. Reset to continue.</div>';$('charts').innerHTML='';return}
+const ch=S.filter(d=>d.churn),rt=S.filter(d=>!d.churn),mrr=S.reduce((s,d)=>s+d.mrr,0),risk=ch.reduce((s,d)=>s+d.mrr,0);
+const k=[[pct(ch.length/S.length),'Churn rate'],[pct(rt.length/S.length),'Retention rate'],[usd(risk)+'/mo','Revenue at risk ('+usd(risk*12)+'/yr)'],[mrr?pct(risk/mrr):'0%','Share of monthly revenue at risk'],[avg(S.map(d=>d.tenure)).toFixed(1)+' mo','Avg tenure, all'],[ch.length?avg(ch.map(d=>d.tenure)).toFixed(1)+' mo':'n/a','Avg tenure, churned'],[rt.length?avg(rt.map(d=>d.tenure)).toFixed(1)+' mo':'n/a','Avg tenure, retained']];
+$('kpis').innerHTML=k.map(x=>`<div class="kpi"><b>${x[0]}</b><span>${x[1]}</span></div>`).join('');
+const gS=group(S,'sub',['Basic','Pro','Enterprise']);
+const rev=gS.length?`<div class="card"><h2>Revenue at risk by subscription</h2>${bars(gS.map(g=>({l:g.k,w:risk?g.mrr/risk*100:0,t:usd(g.mrr)+'/mo'})))}<p class="insight">${risk?`<b>${[...gS].sort((a,b)=>b.mrr-a.mrr)[0].k}</b> accounts for the most lost revenue (${usd([...gS].sort((a,b)=>b.mrr-a.mrr)[0].mrr)}/mo). Bars show each plan’s share of the ${usd(risk)}/mo lost, out of ${usd(mrr)}/mo total.`:'No revenue at risk in this selection.'}</p></div>`:'';
+const tn=`<div class="card"><h2>Average tenure: churned vs retained</h2>${bars([{l:'Churned',w:ch.length?avg(ch.map(d=>d.tenure))/48*100:0,t:ch.length?avg(ch.map(d=>d.tenure)).toFixed(1)+' mo':'n/a'},{l:'Retained',k:1,w:rt.length?avg(rt.map(d=>d.tenure))/48*100:0,t:rt.length?avg(rt.map(d=>d.tenure)).toFixed(1)+' mo':'n/a'}])}<p class="insight">Scale is 0–48 months. A large gap means customers leave early, so the first months are the retention window.</p></div>`;
+$('charts').innerHTML=
+rateCard('Churn rate by contract',group(S,'contract',['Month-to-Month','One Year','Two Year']),'Longer contracts lock customers in, so compare Month-to-Month with the rest.')+
+rateCard('Churn rate by tenure band',group(S,'band',bands.map(b=>b[0])),'Early-tenure customers are the most exposed.')+
+rateCard('Churn rate by payment method',group(S,'pay'),'Small groups (2–6 customers), so avoid strong conclusions.')+
+rev+tn;}
+['fc','fp','ft'].forEach(i=>$(i).onchange=render);
+$('reset').onclick=()=>{['fc','fp','ft'].forEach(i=>$(i).value='');render()};
+render();
+</script></body></html>
